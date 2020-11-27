@@ -1,5 +1,6 @@
 import random, math
 from cmu_112_graphics import *
+import copy
 
 class Card(object):
     def __init__(self, name, effectS, speedM, intM, pointM):
@@ -10,6 +11,8 @@ class Card(object):
         self.pointM = pointM
     def giveScore(self, app, player):
         return (self.speedM, self.intM, self.pointM)
+    def __eq__(self, other):
+        return isinstance(other, Card) 
     
 class Weapon(Card):
     def __init__(self, name, effectS, shieldName):
@@ -95,25 +98,37 @@ def appStarted(app):
 def pickCard(app, i):
     #Adds cards to player's cards
     if app.p1turn: 
-        app.cards[0] += [app.pile.pop(i)]
+        app.cards[0] += [app.pile[i]]
+        app.pile[i] = None
     else:
-        app.cards[1] += [app.pile.pop(i)]
+        app.cards[1] += [app.pile[i]]
+        app.pile[i] = None
     #switches turn
     app.p1turn = not app.p1turn
     #Makes new pile if the pile has 1 card left
-    if len(app.pile) == 1 and len(app.deck) >= 6:
+    noneCount = app.pile.count(None)
+    if noneCount == 5 and len(app.deck) >= 6:
         newPile(app)
     if app.gameMode > 0 and not app.p1turn:
         moveI = generateMove(app)
         pickCard(app, moveI)
     calculateScore(app, 0)
     calculateScore(app, 1)
-    if len(app.deck) < 6 and len(app.pile) == 1:
+    if len(app.deck) < 6 and noneCount == 5:
         endGame(app)
 
 def generateMove(app):
     if app.gameMode == 1:
-        return random.randint(0, len(app.pile) - 1)
+        num = random.randint(0, len(app.pile) - 1)
+        if app.pile[num] == None: return generateMove(app)
+        else: return num
+    if app.gameMode == 2:
+        return minimax(app)
+
+def minimax(app):
+    pile = app.pile.copy()
+
+
 
 def calculateScore(app, p):
     if p == 1: op = 0
@@ -151,32 +166,42 @@ def keyPressed(app, event):
     if event.key == 'r':
         appStarted(app)
     if not app.gameOver:
+        i = app.hcol + 3*app.hrow
         if event.key == "Up": 
-            if app.hrow != 0:
+            if app.hrow != 0 and isinstance(app.pile[i - 3], Card):
                 app.hrow -= 1
         elif event.key == "Down":
-            app.hrow += 1
-            if app.hcol + 3*app.hrow > len(app.pile)-1:
-                app.hrow -= 1
+            if app.hrow != 1 and isinstance(app.pile[i + 3], Card):
+                app.hrow += 1
         elif event.key == "Left":
             if app.hcol != 0:
-                app.hcol -= 1
+                if isinstance(app.pile[i - 1], Card):
+                    app.hcol -= 1
+                else:
+                    if isinstance(app.pile[i - 2], Card) and i-2 >= 0:
+                        app.hcol -= 2
         elif event.key == "Right":
-            if app.hcol < 2:
-                app.hcol += 1
-            if app.hcol + 3*app.hrow > len(app.pile)-1:
-                app.hcol -= 1
+            if app.hcol != 2:
+                if isinstance(app.pile[i + 1], Card):
+                    app.hcol += 1
+                else:
+                    if isinstance(app.pile[i + 2], Card):
+                        app.hcol += 2
         elif event.key == 'Space':
-            i = app.hcol + 3*app.hrow
             pickCard(app, i)
-            app.hrow, app.hcol = 0, 0
+            for c in range(6):
+                if isinstance(app.pile[c], Card):
+                    app.hrow = c // 3
+                    app.hcol = c % 3
+
         elif event.key == '1':
             app.gameMode = 1
+        elif event.key == '2':
+            app.gameMode = 2
 
 
 def newPile(app):
-    if len(app.pile) == 1:
-        app.pile.pop()
+    app.pile = []
     for c in range(6):
         i = random.randint(0, len(app.deck)-1)
         app.pile += [app.deck.pop(i)]
@@ -200,7 +225,7 @@ def drawCards(app, canvas):
             if row == app.hrow and col == app.hcol:
                 outline = 'red'
             else: outline ='Black'
-            if len(app.pile) >= i+1:
+            if len(app.pile) >= i+1 and app.pile[i] != None:
                 canvas.create_rectangle(x0, y0, x1, y1, outline=outline, width=10)
                 canvas.create_text((x1+x0)//2, (y1+y0)//2, text=app.pile[i].name)
     if app.p1turn: text = "Player 1's Turn"
@@ -212,6 +237,7 @@ def drawCards(app, canvas):
     canvas.create_text(100, 880, text=f'Speed = {app.speed[0]}')
     canvas.create_text(900, 900, text=f'Intelegence = {app.intel[1]}')
     canvas.create_text(100, 900, text=f'Intelegence = {app.intel[0]}')
+    #Draw text at bottom
     i = app.hcol + 3*app.hrow
     h = app.pile[i].name
     d = app.pile[i].effectS
