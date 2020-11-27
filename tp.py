@@ -88,23 +88,32 @@ def appStarted(app):
     app.score = [0,0]
     app.gameOver = False
     app.winner = None
-    app.gameMode = True
+    app.gameMode = 0
+    #0 is 2 player, 1 is random, 2 is minimax
     newPile(app)
 
 def pickCard(app, i):
+    #Adds cards to player's cards
     if app.p1turn: 
         app.cards[0] += [app.pile.pop(i)]
     else:
         app.cards[1] += [app.pile.pop(i)]
+    #switches turn
     app.p1turn = not app.p1turn
+    #Makes new pile if the pile has 1 card left
     if len(app.pile) == 1 and len(app.deck) >= 6:
         newPile(app)
-    if not app.gameMode and not app.p1turn:
-        pickCard(app, random.randint(0, len(app.pile)-1))
+    if app.gameMode > 0 and not app.p1turn:
+        moveI = generateMove(app)
+        pickCard(app, moveI)
     calculateScore(app, 0)
     calculateScore(app, 1)
     if len(app.deck) < 6 and len(app.pile) == 1:
         endGame(app)
+
+def generateMove(app):
+    if app.gameMode == 1:
+        return random.randint(0, len(app.pile) - 1)
 
 def calculateScore(app, p):
     if p == 1: op = 0
@@ -161,11 +170,13 @@ def keyPressed(app, event):
             i = app.hcol + 3*app.hrow
             pickCard(app, i)
             app.hrow, app.hcol = 0, 0
-        elif event.key == 'p':
-            app.gameMode = not app.gameMode
+        elif event.key == '1':
+            app.gameMode = 1
 
 
 def newPile(app):
+    if len(app.pile) == 1:
+        app.pile.pop()
     for c in range(6):
         i = random.randint(0, len(app.deck)-1)
         app.pile += [app.deck.pop(i)]
@@ -212,9 +223,7 @@ def drawPicks(app,canvas):
     for i in range(len(app.cards[1])):
         canvas.create_text(750, 20*(i+1), text=app.cards[1][i].name)
 
-
-def redrawAll(app,canvas):
-    drawPicks(app,canvas)
+def drawEnd(app, canvas):
     if not app.gameOver:
         drawCards(app, canvas)
     else:
@@ -225,6 +234,10 @@ def redrawAll(app,canvas):
         canvas.create_text(app.width//2, app.height//2, text=text)
         canvas.create_text(app.width//2, app.height//2 + 20, 
                         text=f'Score was {app.score[0]} to {app.score[1]}')
+
+def redrawAll(app,canvas):
+    drawPicks(app,canvas)
+    drawEnd(app, canvas)
 
 
 def playGame():
