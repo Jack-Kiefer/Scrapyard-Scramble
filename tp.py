@@ -126,9 +126,62 @@ def generateMove(app):
         return minimax(app)
 
 def minimax(app):
-    pile = app.pile.copy()
+    pile = copy.deepcopy(app.pile)
+    cards = copy.deepcopy(app.cards)
+    x, s = minimaxHelper(app, 1)
+    app.pile = pile
+    app.cards = cards
+    print(s)
+    return s
+            
+def minimaxHelper(app, turn):
+    if app.pile.count(None) == 5:
+        calculateScore(app, 0)
+        calculateScore(app, 1)
+        if app.speed[0] > app.speed[1]:
+            app.score[0] += 10
+        elif app.speed[1] > app.speed[0]:
+            app.score[1] += 10
+        if app.intel[0] > app.intel[1]:
+            app.score[0] += 10
+        elif app.intel[1] > app.intel[0]:
+            app.score[1] += 10
+        #print("scorediff=",app.score[1] - app.score[0])
+        if turn == 1: return (app.score[1] - app.score[0], 0)
+        else: return app.score[1] - app.score[0]
+    elif turn == 1:
+        maxi = -100
+        move = None
+        for i in range(len(app.pile)):
+            #print(app.pile[i])
+            if app.pile[i] != None:
+                temp = app.pile[i] 
+                app.cards[1] += [app.pile[i]]
+                app.pile[i] = None
+                if minimaxHelper(app, 0) > maxi:
+                    #print(minimaxHelper(app, 0))
+                    maxi = minimaxHelper(app, 0)
+                    move = i
+                app.pile[i] = temp
+                app.cards[1].remove(temp)
+        #print("maxi=",(maxi, move))
+        return (maxi, move)
+    else:
+        mini = 100
+        for i in range(len(app.pile)):
+            if app.pile[i] != None:
+                temp = app.pile[i]
+                app.cards[0] += [app.pile[i]]
+                app.pile[i] = None
+                score, move = minimaxHelper(app, 1)
+                if score < mini:
+                    #print(score)
+                    mini = score
+                app.pile[i] = temp
+                app.cards[0].remove(temp)
 
-
+        #print("mini=",mini)
+        return mini
 
 def calculateScore(app, p):
     if p == 1: op = 0
@@ -146,7 +199,7 @@ def endGame(app):
     app.gameOver = True
     if app.speed[0] > app.speed[1]:
         app.score[0] += 10
-    elif app.score[1] > app.score[0]:
+    elif app.speed[1] > app.speed[0]:
         app.score[1] += 10
 
     if app.intel[0] > app.intel[1]:
