@@ -13,6 +13,8 @@ class Card(object):
         return (self.speedM, self.intM, self.pointM)
     def __eq__(self, other):
         return isinstance(other, Card) 
+    def __repr__(self):
+        return self.name
     
 class Weapon(Card):
     def __init__(self, name, effectS, shieldName):
@@ -49,7 +51,20 @@ class Shield(Card):
         if foundCard: self.pointM = 5
         else: self.pointM = 2
         return (self.speedM, self.intM, self.pointM)
-
+    
+class Arm(Card):
+    def __init__(self, name, effectS):
+        self.name = name
+        self.effectS = effectS
+        self.speedM = 0
+        self.intM = 0
+        self.pointM = 2
+    def giveScore(self, app, p):
+        self.pointM = 2
+        for card in app.cards[p]:
+            if card.name == self.name: 
+                self.pointM += 1
+        return (self.speedM, self.intM, self.pointM)
 
 def appStarted(app):
     app.pile = []
@@ -70,17 +85,18 @@ def appStarted(app):
     w15112 = Card('15-112', '+2 Intelligence', 0, 2, 0)
     neuralNetworks = Card('neural networks', '-1 Speed, +3 Intelligence', -1, 3, 0)
     armor = Card('armor', '+3 Points', 0, 0, 3)
-    stickyBoots = Card('sticky boots', '+3 Points, -1 Speed', -1, 0, 3)
-    notSmart = Card('not smart', '+5 if opponent does not have a buzzsaw shield, otherwise +2 points', 0, -1, 4)
-    #Stuff = Card('Stuff', '1 + the amount of Stuff you have Points')
+    stickyBoots = Card('sticky boots', '+4 Points, -1 Speed', -1, 0, 4)
+    notSmart = Card('not smart', '-1 Intelligence, +4 Points', 0, -1, 4)
+    powerBoost = Card('power boost', '+1 Speed, +1 Intelligence', 1, 1, 0)
+    extraArm = Arm('extra arm', '+1 Point for each arm you have (you start with 2 arms)')
     Overclock = Card('Overclock', '+5 Points, -1 Speed, -1 Intelligence', -1, -1, 5)
     app.deck = [laserBlaster, buzzsaw, rocketLauncher, machineGun, 
                 laserBlasterShield, buzzsawShield, 
                 rocketLauncherShield, machineGunShield, jetpack, 
-                jetpack, rocketBoots, rocketBoots,
-                w15112, w15112, neuralNetworks, neuralNetworks,
+                jetpack, jetpack, rocketBoots, rocketBoots,
+                w15112, w15112, w15112, neuralNetworks, neuralNetworks,
                 armor, armor, stickyBoots, stickyBoots, notSmart, 
-                notSmart, Overclock, Overclock] 
+                notSmart, Overclock, Overclock, extraArm,extraArm,extraArm,extraArm,extraArm] 
     app.powerScources = ['Electric', 'Wind', 'Nuclear', 'Gas', 'Steam']
     app.cols = 3
     app.rows = 2
@@ -107,6 +123,9 @@ def pickCard(app, i):
     app.p1turn = not app.p1turn
     #Makes new pile if the pile has 1 card left
     noneCount = app.pile.count(None)
+    if len(app.deck) < 6 and noneCount == 5:
+        endGame(app)
+        return
     if noneCount == 5 and len(app.deck) >= 6:
         newPile(app)
     if app.gameMode > 0 and not app.p1turn:
@@ -114,8 +133,7 @@ def pickCard(app, i):
         pickCard(app, moveI)
     calculateScore(app, 0)
     calculateScore(app, 1)
-    if len(app.deck) < 6 and noneCount == 5:
-        endGame(app)
+
 
 def generateMove(app):
     if app.gameMode == 1:
@@ -128,13 +146,17 @@ def generateMove(app):
 def minimax(app):
     pile = copy.deepcopy(app.pile)
     cards = copy.deepcopy(app.cards)
-    x, s = minimaxHelper(app, 1)
+    x, move = minimaxHelper(app, 1)
+    #print(app.pile)
+    print(app.cards)
     app.pile = pile
     app.cards = cards
-    print(s)
-    return s
+    print(app.cards)
+    calculateScore(app, 0)
+    calculateScore(app, 1)
+    return move
             
-def minimaxHelper(app, turn):
+def minimaxHelper(app, turn, depth=0):
     if app.pile.count(None) == 5:
         calculateScore(app, 0)
         calculateScore(app, 1)
@@ -146,7 +168,7 @@ def minimaxHelper(app, turn):
             app.score[0] += 10
         elif app.intel[1] > app.intel[0]:
             app.score[1] += 10
-        #print("scorediff=",app.score[1] - app.score[0])
+        #print(" "*depth,"scorediff=",app.score[1] - app.score[0])
         if turn == 1: return (app.score[1] - app.score[0], 0)
         else: return app.score[1] - app.score[0]
     elif turn == 1:
@@ -155,32 +177,36 @@ def minimaxHelper(app, turn):
         for i in range(len(app.pile)):
             #print(app.pile[i])
             if app.pile[i] != None:
-                temp = app.pile[i] 
-                app.cards[1] += [app.pile[i]]
+                temp = copy.copy(app.pile[i])
+                app.cards[1] += [temp]
                 app.pile[i] = None
-                if minimaxHelper(app, 0) > maxi:
+                result = minimaxHelper(app, 0, depth + 1)
+                if result > maxi:
                     #print(minimaxHelper(app, 0))
-                    maxi = minimaxHelper(app, 0)
+                    maxi = result
                     move = i
                 app.pile[i] = temp
                 app.cards[1].remove(temp)
-        #print("maxi=",(maxi, move))
+        #print(" "*depth,"maxi=",(maxi, move))
         return (maxi, move)
     else:
         mini = 100
         for i in range(len(app.pile)):
             if app.pile[i] != None:
-                temp = app.pile[i]
-                app.cards[0] += [app.pile[i]]
+                temp = copy.copy(app.pile[i])
+                print(" "*depth,"temp=", temp)
+                app.cards[0] = app.cards[0] + [temp]
                 app.pile[i] = None
-                score, move = minimaxHelper(app, 1)
+                score, move = minimaxHelper(app, 1, depth + 1)
                 if score < mini:
                     #print(score)
                     mini = score
                 app.pile[i] = temp
+                print(" "*depth,app.cards[0])
                 app.cards[0].remove(temp)
+                print(" "*depth,app.cards[0])
 
-        #print("mini=",mini)
+        #print(" "*depth,"mini=",mini)
         return mini
 
 def calculateScore(app, p):
@@ -233,13 +259,46 @@ def keyPressed(app, event):
                 else:
                     if isinstance(app.pile[i - 2], Card) and i-2 >= 0:
                         app.hcol -= 2
+                    else:
+                        if app.hrow == 0:
+                            if isinstance(app.pile[i + 2], Card):
+                                print('yes')
+                                app.hrow += 1
+                                app.hcol -= 1
+                            elif isinstance(app.pile[i + 1], Card) and app.hcol == 2:
+                                app.hrow += 1
+                                app.hcol -= 2
+                        elif app.hrow == 1:
+                            if isinstance(app.pile[i - 4], Card):
+                                app.hrow -= 1
+                                app.hcol -= 1
+                            elif isinstance(app.pile[i - 5], Card) and app.hcol == 2:
+                                app.hrow -= 1
+                                app.hcol -= 2
+
+
         elif event.key == "Right":
             if app.hcol != 2:
                 if isinstance(app.pile[i + 1], Card):
                     app.hcol += 1
                 else:
-                    if isinstance(app.pile[i + 2], Card):
+                    if app.hcol == 0 and isinstance(app.pile[i + 2], Card):
                         app.hcol += 2
+                    else:
+                        if app.hrow == 0:
+                            if isinstance(app.pile[i + 4], Card):
+                                app.hrow += 1
+                                app.hcol += 1
+                            elif app.hcol == 0 and isinstance(app.pile[i + 5], Card):
+                                app.hrow += 1
+                                app.hcol += 2
+                        elif app.hrow == 1:
+                            if isinstance(app.pile[i - 2], Card):
+                                app.hrow -= 1
+                                app.hcol += 1
+                            elif isinstance(app.pile[i - 1], Card) and app.hcol == 0:
+                                app.hrow -= 1
+                                app.hcol += 2
         elif event.key == 'Space':
             pickCard(app, i)
             for c in range(6):
@@ -281,6 +340,12 @@ def drawCards(app, canvas):
             if len(app.pile) >= i+1 and app.pile[i] != None:
                 canvas.create_rectangle(x0, y0, x1, y1, outline=outline, width=10)
                 canvas.create_text((x1+x0)//2, (y1+y0)//2, text=app.pile[i].name)
+    i = app.hcol + 3*app.hrow
+    h = app.pile[i].name
+    d = app.pile[i].effectS
+    canvas.create_text(app.width//2, 900, text=d)
+
+def drawScores(app, canvas):
     if app.p1turn: text = "Player 1's Turn"
     else:text = "Player 2's Turn"
     canvas.create_text(app.width//2, 150, text=text)
@@ -288,13 +353,8 @@ def drawCards(app, canvas):
     canvas.create_text(100, 860, text=f'Score = {app.score[0]}')
     canvas.create_text(900, 880, text=f'Speed = {app.speed[1]}')
     canvas.create_text(100, 880, text=f'Speed = {app.speed[0]}')
-    canvas.create_text(900, 900, text=f'Intelegence = {app.intel[1]}')
-    canvas.create_text(100, 900, text=f'Intelegence = {app.intel[0]}')
-    #Draw text at bottom
-    i = app.hcol + 3*app.hrow
-    h = app.pile[i].name
-    d = app.pile[i].effectS
-    canvas.create_text(app.width//2, 900, text=d)
+    canvas.create_text(900, 900, text=f'Intelligence = {app.intel[1]}')
+    canvas.create_text(100, 900, text=f'Intelligence = {app.intel[0]}')
 
 def drawPicks(app,canvas):
     for i in range(len(app.cards[0])):
@@ -303,6 +363,7 @@ def drawPicks(app,canvas):
         canvas.create_text(750, 20*(i+1), text=app.cards[1][i].name)
 
 def drawEnd(app, canvas):
+    drawScores(app,canvas)
     if not app.gameOver:
         drawCards(app, canvas)
     else:
