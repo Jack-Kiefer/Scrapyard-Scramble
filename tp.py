@@ -1,4 +1,5 @@
 import random, math
+# CITATION: I am using CMU 112 graphics framework from https://www.cs.cmu.edu/~112/notes/notes-graphics.html
 from cmu_112_graphics import *
 import copy
 import time
@@ -238,6 +239,7 @@ def generateMove(app):
     if app.gameMode == 2 or app.gameMode == 3:
         return minimax(app)
 
+# CITATION: Minimax algorithm inspired by one from the Game AI mini-lecture on 11/5/20
 def minimax(app):
     pile = copy.deepcopy(app.pile)
     cards = copy.deepcopy(app.cards)
