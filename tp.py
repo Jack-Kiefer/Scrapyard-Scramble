@@ -9,10 +9,10 @@ class Card(object):
         self.speedM = speedM
         self.intM = intM
         self.pointM = pointM
-    def giveScore(self, app, player):
+    def giveScore(self, app, player, i):
         return (self.speedM, self.intM, self.pointM)
     def __eq__(self, other):
-        return isinstance(other, Card) 
+        return isinstance(other, Card) and self.name == other.name
     def __repr__(self):
         return self.name
     
@@ -24,7 +24,7 @@ class Weapon(Card):
         self.intM = 0
         self.pointM = 0
         self.shieldName = shieldName
-    def giveScore(self, app, p):
+    def giveScore(self, app, p, i):
         foundCard = False
         if p == 1: op = 0
         else: op = 1
@@ -42,7 +42,7 @@ class Shield(Card):
         self.intM = 0
         self.pointM = 0
         self.weaponName = weaponName
-    def giveScore(self, app, p):
+    def giveScore(self, app, p, i):
         foundCard = False
         if p == 1: op = 0
         else: op = 1
@@ -59,12 +59,60 @@ class Arm(Card):
         self.speedM = 0
         self.intM = 0
         self.pointM = 2
-    def giveScore(self, app, p):
+    def giveScore(self, app, p, i):
         self.pointM = 2
         for card in app.cards[p]:
             if card.name == self.name: 
                 self.pointM += 1
         return (self.speedM, self.intM, self.pointM)
+
+class Boost(Card):
+    def __init__(self, name, effectS, type):
+        self.name = name
+        self.effectS = effectS
+        self.speedM = 0
+        self.intM = 0
+        self.pointM = 0
+        self.type = type
+    def giveScore(self, app, p, i):
+        if self.type == 's':
+            self.pointM = 0
+            for card in app.cards[p]:
+                if isinstance(card, Shield):
+                    self.pointM += 2
+            return (self.speedM, self.intM, self.pointM)
+        else:
+            self.pointM = 0
+            for card in app.cards[p]:
+                if isinstance(card, Weapon):
+                    self.pointM += 2
+            return (self.speedM, self.intM, self.pointM)
+
+class Copy(Card):
+    def __init__(self, name, effectS):
+        self.name = name
+        self.effectS = effectS
+        self.speedM = 0
+        self.intM = 0
+        self.pointM = 0
+    def giveScore(self, app, p, i):
+        if p == 1: 
+            op = 0
+            lastIndex = i
+        else: 
+            op = 1
+            lastIndex = i - 1
+        if lastIndex == -1:
+            return (self.speedM, self.intM, self.pointM)
+        speedM = app.cards[op][lastIndex].speedM
+        intM = app.cards[op][lastIndex].intM
+        pointM = app.cards[op][lastIndex].pointM
+        self.speedM = speedM
+        self.pointM = pointM
+        self.intM = intM
+        return (self.speedM, self.intM, self.pointM)
+
+
 
 def appStarted(app):
     app.titleScreen = True
@@ -74,32 +122,53 @@ def appStarted(app):
     app.cards = [[],[]]
     app.margin = 200
     app.cellmargin = 20
-    laserBlaster = Weapon('laser blaster', '+5 if opponent does not have a laser blaster shield, otherwise +2 points', 'laser blaster shield')
-    buzzsaw = Weapon('buzzsaw', '+5 if opponent does not have a buzzsaw shield, otherwise +2 points', 'buzzsaw shield')
-    rocketLauncher = Weapon('rocket launcher', '+5 if opponent does not have a rocket launcher shield, otherwise +2 points', 'rocket launcher shield')
-    machineGun = Weapon('machine gun', '+5 if opponent does not have a machine gun shield, otherwise +2 points', 'machine gun shield')
-    laserBlasterShield = Shield('laser blaster shield', '+5 if opponent has a laser blaster, otherwise +2 points', 'laser blaster')
-    buzzsawShield = Shield('buzzsaw shield', '+5 if opponent has a buzzsaw, otherwise +2 points', 'buzzsaw')
-    rocketLauncherShield = Shield('rocket launcher shield', '+5 if opponent has a rocket launcher, otherwise +2 points', 'rocket launcher')
-    machineGunShield = Shield('machine gun shield', '+5 if opponent has a machine gun, otherwise +2 points', 'machine gun')
-    jetpack = Card('jetpack', '+2 Speed', 2, 0, 0)
-    rocketBoots = Card('rocket boots', '+3 Speed, -1 Intelligence', 3, -1, 0)
-    w15112 = Card('15-112', '+2 Intelligence', 0, 2, 0)
-    neuralNetworks = Card('neural networks', '-1 Speed, +3 Intelligence', -1, 3, 0)
-    armor = Card('armor', '+3 Points', 0, 0, 3)
-    stickyBoots = Card('sticky boots', '+4 Points, -1 Speed', -1, 0, 4)
-    notSmart = Card('not smart', '-1 Intelligence, +4 Points', 0, -1, 4)
-    powerBoost = Card('power boost', '+1 Speed, +1 Intelligence', 1, 1, 0)
-    extraArm = Arm('extra arm', '+1 Point for each arm you have (you start with 2 arms)')
+    laserBlaster = Weapon('Laser Blaster', '+5 if opponent does not have a laser blaster shield, otherwise +2 points', 'Laser Blaster Shield')
+    buzzsaw = Weapon('Buzzsaw', '+5 if opponent does not have a buzzsaw shield, otherwise +2 points', 'Buzzsaw Shield')
+    rocketLauncher = Weapon('Rocket Launcher', '+5 if opponent does not have a rocket launcher shield, otherwise +2 points', 'Rocket Launcher Shield')
+    machineGun = Weapon('Machine Gun', '+5 if opponent does not have a machine gun shield, otherwise +2 points', 'Machine Gun Shield')
+    explosivePizza = Weapon('Explosive Pizza', '+5 if opponent does not have a explosive pizza shield, otherwise +2 points', 'Explosive Pizza Shield')
+    laserDog = Weapon('Laser Dog', '+5 if opponent does not have a laser dog shield, otherwise +2 points', 'Laser Dog Shield')
+    laserBlasterShield = Shield('Laser Blaster Shield', '+5 if opponent has a laser blaster, otherwise +2 points', 'Laser Blaster')
+    buzzsawShield = Shield('Buzzsaw Shield', '+5 if opponent has a buzzsaw, otherwise +2 points', 'Buzzsaw')
+    rocketLauncherShield = Shield('Rocket Launcher Shield', '+5 if opponent has a rocket launcher, otherwise +2 points', 'Rocket Launcher')
+    machineGunShield = Shield('Machine Gun Shield', '+5 if opponent has a machine gun, otherwise +2 points', 'Machine Gun')
+    explosivePizzaShield = Shield('Explosive Pizza Shield', '+5 if opponent has an explosive pizza, otherwise +2 points', 'Explosive Pizza')
+    laserDogShield = Shield('Laser Dog Shield', '+5 if opponent has a laser dog, otherwise +2 points', 'Laser Dog')
+    defenseBoost1 = Boost('Defense Boost', '+2 Points for each shield you have', 's')
+    defenseBoost2 = Boost('Defense Boost', '+2 Points for each shield you have', 's')
+    attackBoost1 = Boost('Attack Boost', '+2 Points for each weapon you have', 'w')
+    attackBoost2 = Boost('Attack Boost', '+2 Points for each weapon you have', 'w')
+    jetpack1 = Card('Jetpack', '+2 Speed', 2, 0, 0)
+    jetpack2 = Card('Jetpack', '+2 Speed', 2, 0, 0)
+    rocketBoots1 = Card('Rocket Boots', '+3 Speed, -1 Intelligence', 3, -1, 0)
+    rocketBoots2 = Card('Rocket Boots', '+3 Speed, -1 Intelligence', 3, -1, 0)
+    neuralNetworks1 = Card('Neural Networks', '+2 Intelligence', 0, 2, 0)
+    neuralNetworks2 = Card('Neural Networks', '+2 Intelligence', 0, 2, 0)
+    minimaxAlgorithm1 = Card('Minimax Algorithm', '+3 Intelligence, -1 Speed', -1, 3, 0)
+    minimaxAlgorithm2 = Card('Minimax Algorithm', '+3 Intelligence, -1 Speed', -1, 3, 0)
+    armor1 = Card('Armor', '+3 Points', 0, 0, 3)
+    armor2 = Card('Armor', '+3 Points', 0, 0, 3)
+    stickyBoots1 = Card('Sticky Boots', '+4 Points, -1 Speed', -1, 0, 4)
+    stickyBoots2 = Card('Sticky Boots', '+4 Points, -1 Speed', -1, 0, 4)
+    quickProgramming1 = Card('Quick Programming', '-1 Intelligence, +4 Points', 0, -1, 4)
+    quickProgramming2 = Card('Quick Programming', '-1 Intelligence, +4 Points', 0, -1, 4)
     Overclock = Card('Overclock', '+5 Points, -1 Speed, -1 Intelligence', -1, -1, 5)
-    app.deck = [laserBlaster, buzzsaw, rocketLauncher, machineGun, 
-                laserBlasterShield, buzzsawShield, 
-                rocketLauncherShield, machineGunShield, jetpack, 
-                jetpack, jetpack, rocketBoots, rocketBoots,
-                w15112, w15112, w15112, neuralNetworks, neuralNetworks,
-                armor, armor, stickyBoots, stickyBoots, notSmart, 
-                notSmart, Overclock, Overclock, extraArm,extraArm,extraArm,extraArm,extraArm] 
-    app.powerScources = ['Electric', 'Wind', 'Nuclear', 'Gas', 'Steam']
+    powerBoost = Card('Power Boost', '+1 Speed, +1 Intelligence, +1 Point', 1, 1, 1)
+    extraArm1 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
+    extraArm2 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
+    extraArm3 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
+    extraArm4 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
+    extraArm5 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
+    counterPart1 = Copy('Counter Part', 'Get 1 plus the amount of inteligence or speed they got last turn')
+    counterPart2 = Copy('Counter Part', 'Get 1 plus the amount of inteligence or speed they got last turn')
+    counterPart3 = Copy('Counter Part', 'Get 1 plus the amount of inteligence or speed they got last turn')
+    app.deck = [laserBlaster, buzzsaw, rocketLauncher, machineGun, explosivePizza, laserDog, laserBlasterShield, 
+                buzzsawShield, rocketLauncherShield, machineGunShield, explosivePizzaShield, laserDogShield,
+                defenseBoost1, defenseBoost2, attackBoost1, attackBoost2, jetpack1, jetpack2, rocketBoots1,
+                rocketBoots2, neuralNetworks1, neuralNetworks2, minimaxAlgorithm1, minimaxAlgorithm2,
+                armor1, armor2, stickyBoots1, stickyBoots2, quickProgramming1, quickProgramming2, 
+                Overclock, powerBoost, extraArm1, extraArm2, extraArm3, extraArm4, extraArm5, counterPart1,
+                counterPart2, counterPart3]
     app.cols = 3
     app.rows = 2
     app.hrow = 0
@@ -134,6 +203,7 @@ def pickCard(app, i):
     if app.gameMode > 0 and not app.p1turn:
         moveI = generateMove(app)
         pickCard(app, moveI)
+    print()
     calculateScore(app, 0)
     calculateScore(app, 1)
 
@@ -171,6 +241,7 @@ def minimaxHelper(app, turn, depth):
             app.score[0] += 10
         elif app.intel[1] > app.intel[0]:
             app.score[1] += 10
+            #print(app.cards)
         #print(" "*depth,"scorediff=",app.score[1] - app.score[0])
         if turn == 1: return (app.score[1] - app.score[0], 0)
         else: return app.score[1] - app.score[0]
@@ -189,10 +260,7 @@ def minimaxHelper(app, turn, depth):
                     maxi = result
                     move = i
                 app.pile[i] = temp
-                for k in range(len(app.cards[1])):
-                    if temp.name == app.cards[1][k].name:
-                        app.cards[1].pop(k)
-                        break
+                app.cards[1].pop()
         #print(" "*depth,"maxi=",(maxi, move))
         return (maxi, move)
     else:
@@ -209,10 +277,7 @@ def minimaxHelper(app, turn, depth):
                     mini = score
                 app.pile[i] = temp
                 #print(" "*depth,app.cards[0])
-                for k in range(len(app.cards[0])):
-                    if temp.name == app.cards[0][k].name:
-                        app.cards[0].pop(k)
-                        break
+                app.cards[0].pop()
                 #print(" "*depth,app.cards[0])
 
         #print(" "*depth,"mini=",mini)
@@ -224,11 +289,12 @@ def calculateScore(app, p):
     app.score[p] = 0
     app.speed[p] = 0
     app.intel[p] = 0
-    for card in app.cards[p]:
-        speed, intel, score = card.giveScore(app, p)
-        app.score[p] += score
-        app.intel[p] += intel
+    for i in range(len(app.cards[p])):
+        speed, intel, score = app.cards[p][i].giveScore(app, p, i)
         app.speed[p] += speed
+        app.intel[p] += intel
+        app.score[p] += score
+
 
 def endGame(app):
     app.gameOver = True
@@ -255,9 +321,13 @@ def keyPressed(app, event):
         if event.key == "Up":
             if app.highlight != 0:
                 app.highlight -= 1
+            else:
+                app.highlight = 3
         if event.key == "Down":
             if app.highlight != 3:
                 app.highlight += 1
+            else:
+                app.highlight = 0
         if event.key == "Space":
             app.titleScreen = False
             app.gameMode = app.highlight
@@ -271,20 +341,29 @@ def keyPressed(app, event):
             if event.key == "Up": 
                 if app.hrow != 0 and isinstance(app.pile[i - 3], Card):
                     app.hrow -= 1
+                elif (app.pile[0] == None and isinstance(app.pile[1], Card) and 
+                app.pile[2] == None and isinstance(app.pile[3], Card) and 
+                app.pile[4] == None and isinstance(app.pile[5], Card)):
+                    app.hrow = 0
+                    app.hcol = 1
             elif event.key == "Down":
                 if app.hrow != 1 and isinstance(app.pile[i + 3], Card):
                     app.hrow += 1
+                elif (app.pile[1] == None and isinstance(app.pile[0], Card) and 
+                app.pile[3] == None and isinstance(app.pile[2], Card) and 
+                app.pile[5] == None and isinstance(app.pile[4], Card)):
+                    app.hrow = 1
+                    app.hcol = 1
             elif event.key == "Left":
                 if app.hcol != 0:
                     if isinstance(app.pile[i - 1], Card):
                         app.hcol -= 1
                     else:
-                        if isinstance(app.pile[i - 2], Card) and i-2 >= 0:
+                        if isinstance(app.pile[i - 2], Card) and i-2 >= 0 and app.hcol == 2:
                             app.hcol -= 2
                         else:
                             if app.hrow == 0:
                                 if isinstance(app.pile[i + 2], Card):
-                                    print('yes')
                                     app.hrow += 1
                                     app.hcol -= 1
                                 elif isinstance(app.pile[i + 1], Card) and app.hcol == 2:
@@ -293,7 +372,7 @@ def keyPressed(app, event):
                             elif app.hrow == 1:
                                 if isinstance(app.pile[i - 4], Card):
                                     app.hrow -= 1
-                                    app.hcol -= 1
+                                    app.hcol -= 1 
                                 elif isinstance(app.pile[i - 5], Card) and app.hcol == 2:
                                     app.hrow -= 1
                                     app.hcol -= 2
