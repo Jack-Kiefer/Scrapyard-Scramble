@@ -1,6 +1,7 @@
 import random, math
 from cmu_112_graphics import *
 import copy
+import time
 
 class Card(object):
     def __init__(self, name, effectS, speedM, intM, pointM):
@@ -58,9 +59,9 @@ class Arm(Card):
         self.effectS = effectS
         self.speedM = 0
         self.intM = 0
-        self.pointM = 2
+        self.pointM = 1
     def giveScore(self, app, p, i):
-        self.pointM = 2
+        self.pointM = 1
         for card in app.cards[p]:
             if card.name == self.name: 
                 self.pointM += 1
@@ -159,9 +160,9 @@ def appStarted(app):
     extraArm3 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
     extraArm4 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
     extraArm5 = Arm('Extra Arm', '+1 Point for each arm you have (you start with 2 arms)')
-    counterPart1 = Copy('Counter Part', 'Get 1 plus the amount of inteligence or speed they got last turn')
-    counterPart2 = Copy('Counter Part', 'Get 1 plus the amount of inteligence or speed they got last turn')
-    counterPart3 = Copy('Counter Part', 'Get 1 plus the amount of inteligence or speed they got last turn')
+    counterPart1 = Copy('Counter Part', 'Copy the last played card')
+    counterPart2 = Copy('Counter Part', 'Copy the last played card')
+    counterPart3 = Copy('Counter Part', 'Copy the last played card')
     app.deck = [laserBlaster, buzzsaw, rocketLauncher, machineGun, explosivePizza, laserDog, laserBlasterShield, 
                 buzzsawShield, rocketLauncherShield, machineGunShield, explosivePizzaShield, laserDogShield,
                 defenseBoost1, defenseBoost2, attackBoost1, attackBoost2, jetpack1, jetpack2, rocketBoots1,
@@ -169,6 +170,9 @@ def appStarted(app):
                 armor1, armor2, stickyBoots1, stickyBoots2, quickProgramming1, quickProgramming2, 
                 Overclock, powerBoost, extraArm1, extraArm2, extraArm3, extraArm4, extraArm5, counterPart1,
                 counterPart2, counterPart3]
+    app.image1 = app.loadImage('https://c.pxhere.com/photos/58/22/disposal_dump_garbage_junk_landfill_litter_pile_scrap_metal-1365482.jpg!d')
+    app.image1 = app.scaleImage(app.image1, 1.5)
+    #app.image2 = app.loadImage('https://www.clipartmax.com/png/middle/4-47442_transparent-arrow-clip-art-at-clker-arrow-clipart-transparent-background.png')
     app.cols = 3
     app.rows = 2
     app.hrow = 0
@@ -180,6 +184,7 @@ def appStarted(app):
     app.winner = None
     app.gameMode = 0
     app.maxDepth = 100
+    app.waiting = False
     #0 is 2 player, 1 is random, 2 is minimax with max depth 2, 3 is minimax with full depth
     newPile(app)
 
@@ -201,11 +206,28 @@ def pickCard(app, i):
     if noneCount == 5 and len(app.deck) >= 6:
         newPile(app)
     if app.gameMode > 0 and not app.p1turn:
-        moveI = generateMove(app)
-        pickCard(app, moveI)
-    print()
+        app.waiting = True
+        app.time = time.time()
     calculateScore(app, 0)
     calculateScore(app, 1)
+    if not app.waiting:
+        for c in range(6):
+            if isinstance(app.pile[c], Card):
+                app.hrow = c // 3
+                app.hcol = c % 3
+
+def timerFired(app):
+    if app.waiting:
+        if time.time() - app.time > 1:
+            moveI = generateMove(app)
+            pickCard(app, moveI)
+            app.waiting = False
+            calculateScore(app, 0)
+            calculateScore(app, 1)
+            for c in range(6):
+                if isinstance(app.pile[c], Card):
+                    app.hrow = c // 3
+                    app.hcol = c % 3
 
 
 def generateMove(app):
@@ -317,104 +339,107 @@ def endGame(app):
 
 
 def keyPressed(app, event):
-    if app.titleScreen:
-        if event.key == "Up":
-            if app.highlight != 0:
-                app.highlight -= 1
-            else:
-                app.highlight = 3
-        if event.key == "Down":
-            if app.highlight != 3:
-                app.highlight += 1
-            else:
-                app.highlight = 0
-        if event.key == "Space":
-            app.titleScreen = False
-            app.gameMode = app.highlight
-            if app.gameMode == 2:
-                app.maxDepth = 2
-    else:
-        if event.key == 'r':
-            appStarted(app)
-        if not app.gameOver:
-            i = app.hcol + 3*app.hrow
-            if event.key == "Up": 
-                if app.hrow != 0 and isinstance(app.pile[i - 3], Card):
-                    app.hrow -= 1
-                elif (app.pile[0] == None and isinstance(app.pile[1], Card) and 
-                app.pile[2] == None and isinstance(app.pile[3], Card) and 
-                app.pile[4] == None and isinstance(app.pile[5], Card)):
-                    app.hrow = 0
-                    app.hcol = 1
-            elif event.key == "Down":
-                if app.hrow != 1 and isinstance(app.pile[i + 3], Card):
-                    app.hrow += 1
-                elif (app.pile[1] == None and isinstance(app.pile[0], Card) and 
-                app.pile[3] == None and isinstance(app.pile[2], Card) and 
-                app.pile[5] == None and isinstance(app.pile[4], Card)):
-                    app.hrow = 1
-                    app.hcol = 1
-            elif event.key == "Left":
-                if app.hcol != 0:
-                    if isinstance(app.pile[i - 1], Card):
-                        app.hcol -= 1
-                    else:
-                        if isinstance(app.pile[i - 2], Card) and i-2 >= 0 and app.hcol == 2:
-                            app.hcol -= 2
+    if not app.waiting:
+        if app.titleScreen:
+            if event.key == "Up":
+                if app.highlight != 0:
+                    app.highlight -= 1
+                else:
+                    app.highlight = 3
+            if event.key == "Down":
+                if app.highlight != 3:
+                    app.highlight += 1
+                else:
+                    app.highlight = 0
+            if event.key == "Space":
+                app.titleScreen = False
+                app.gameMode = app.highlight
+                if app.gameMode == 2:
+                    app.maxDepth = 2
+        else:
+            if event.key == 'r' or (app.gameOver and event.key != 'Space'):
+                appStarted(app)
+            elif not app.gameOver:
+                i = app.hcol + 3*app.hrow
+                if event.key == "Up": 
+                    if app.hrow != 0 and isinstance(app.pile[i - 3], Card):
+                        app.hrow -= 1
+                    elif (app.pile[0] == None and isinstance(app.pile[1], Card) and 
+                    app.pile[2] == None and isinstance(app.pile[3], Card) and 
+                    app.pile[4] == None and isinstance(app.pile[5], Card)):
+                        app.hrow = 0
+                        app.hcol = 1
+                elif event.key == "Down":
+                    if app.hrow != 1 and isinstance(app.pile[i + 3], Card):
+                        app.hrow += 1
+                    elif (app.pile[1] == None and isinstance(app.pile[0], Card) and 
+                    app.pile[3] == None and isinstance(app.pile[2], Card) and 
+                    app.pile[5] == None and isinstance(app.pile[4], Card)):
+                        app.hrow = 1
+                        app.hcol = 1
+                elif event.key == "Left":
+                    if app.hcol != 0:
+                        if isinstance(app.pile[i - 1], Card):
+                            app.hcol -= 1
                         else:
-                            if app.hrow == 0:
-                                if isinstance(app.pile[i + 2], Card):
-                                    app.hrow += 1
-                                    app.hcol -= 1
-                                elif isinstance(app.pile[i + 1], Card) and app.hcol == 2:
-                                    app.hrow += 1
-                                    app.hcol -= 2
-                            elif app.hrow == 1:
-                                if isinstance(app.pile[i - 4], Card):
-                                    app.hrow -= 1
-                                    app.hcol -= 1 
-                                elif isinstance(app.pile[i - 5], Card) and app.hcol == 2:
-                                    app.hrow -= 1
-                                    app.hcol -= 2
+                            if (isinstance(app.pile[i - 2], Card) and i-2 >= 0 and 
+                                app.hcol == 2):
+                                app.hcol -= 2
+                            else:
+                                if app.hrow == 0:
+                                    if isinstance(app.pile[i + 2], Card):
+                                        app.hrow += 1
+                                        app.hcol -= 1
+                                    elif (isinstance(app.pile[i + 1], Card) and 
+                                        app.hcol == 2):
+                                        app.hrow += 1
+                                        app.hcol -= 2
+                                elif app.hrow == 1:
+                                    if isinstance(app.pile[i - 4], Card):
+                                        app.hrow -= 1
+                                        app.hcol -= 1 
+                                    elif (isinstance(app.pile[i - 5], Card) and 
+                                        app.hcol == 2):
+                                        app.hrow -= 1
+                                        app.hcol -= 2
 
 
-            elif event.key == "Right":
-                if app.hcol != 2:
-                    if isinstance(app.pile[i + 1], Card):
-                        app.hcol += 1
-                    else:
-                        if app.hcol == 0 and isinstance(app.pile[i + 2], Card):
-                            app.hcol += 2
+                elif event.key == "Right":
+                    if app.hcol != 2:
+                        if isinstance(app.pile[i + 1], Card):
+                            app.hcol += 1
                         else:
-                            if app.hrow == 0:
-                                if isinstance(app.pile[i + 4], Card):
-                                    app.hrow += 1
-                                    app.hcol += 1
-                                elif app.hcol == 0 and isinstance(app.pile[i + 5], Card):
-                                    app.hrow += 1
-                                    app.hcol += 2
-                            elif app.hrow == 1:
-                                if isinstance(app.pile[i - 2], Card):
-                                    app.hrow -= 1
-                                    app.hcol += 1
-                                elif isinstance(app.pile[i - 1], Card) and app.hcol == 0:
-                                    app.hrow -= 1
-                                    app.hcol += 2
-            elif event.key == 'Space':
-                pickCard(app, i)
-                for c in range(6):
-                    if isinstance(app.pile[c], Card):
-                        app.hrow = c // 3
-                        app.hcol = c % 3
+                            if app.hcol == 0 and isinstance(app.pile[i + 2], Card):
+                                app.hcol += 2
+                            else:
+                                if app.hrow == 0:
+                                    if isinstance(app.pile[i + 4], Card):
+                                        app.hrow += 1
+                                        app.hcol += 1
+                                    elif (app.hcol == 0 and 
+                                        isinstance(app.pile[i + 5], Card)):
+                                        app.hrow += 1
+                                        app.hcol += 2
+                                elif app.hrow == 1:
+                                    if isinstance(app.pile[i - 2], Card):
+                                        app.hrow -= 1
+                                        app.hcol += 1
+                                    elif (isinstance(app.pile[i - 1], Card) and 
+                                        app.hcol == 0):
+                                        app.hrow -= 1
+                                        app.hcol += 2
+                elif event.key == 'Space':
+                    pickCard(app, i)
+                    
 
-            elif event.key == '1':
-                app.gameMode = 1
-            elif event.key == '2':
-                app.gameMode = 2
-                app.maxDepth = 100
-            elif event.key == '3':
-                app.gameMode = 2
-                app.maxDepth = 2
+                elif event.key == '1':
+                    app.gameMode = 1
+                elif event.key == '2':
+                    app.gameMode = 2
+                    app.maxDepth = 100
+                elif event.key == '3':
+                    app.gameMode = 2
+                    app.maxDepth = 2
 
 
 def newPile(app):
@@ -443,60 +468,128 @@ def drawCards(app, canvas):
                 outline = 'red'
             else: outline ='Black'
             if len(app.pile) >= i+1 and app.pile[i] != None:
-                canvas.create_rectangle(x0, y0, x1, y1, outline=outline, width=10)
-                canvas.create_text((x1+x0)//2, (y1+y0)//2, text=app.pile[i].name)
-    i = app.hcol + 3*app.hrow
-    h = app.pile[i].name
-    d = app.pile[i].effectS
-    canvas.create_text(app.width//2, 900, text=d)
+                card = app.pile[i]
+                drawCard(app, canvas, x0, y0, x1, y1, outline, card)
+    canvas.create_rectangle(50, 850, 950, 950, fill="white")
+    if not app.waiting:
+        i = app.hcol + 3*app.hrow
+        h = app.pile[i].name
+        d = app.pile[i].effectS
+        canvas.create_text(app.width//2, 900, text=d, font="Times 30")
+    else:
+        canvas.create_text(app.width//2, 900, text="Thinking...", font="Times 30")
+
+def drawCard(app, canvas, x0, y0, x1, y1, outline, card):
+    canvas.create_rectangle(x0, y0, x1, y1, outline=outline, width=10, fill="white")
+    canvas.create_rectangle(x0+10, y0+30, x1-10, y1-130)
+    canvas.create_text((x1+x0)//2, y0 + 15, text=card.name)
+    canvas.create_text((x1+x0)//2, y1 - 100, text=card.effectS)
+
+def drawArrow(app, canvas, x, y, d):
+    if d == 1:
+        canvas.create_line(x - 30, y, x + 30, y, width=3)
+        canvas.create_line(x + 10, y - 10, x + 30, y,  width=3)
+        canvas.create_line(x + 10, y + 10, x + 30, y,  width=3)
+    else:
+        canvas.create_line(x - 30, y, x + 30, y, width=3)
+        canvas.create_line(x - 10, y - 10, x - 30, y,  width=3)
+        canvas.create_line(x - 10, y + 10, x - 30, y,  width=3)
+
 
 def drawScores(app, canvas):
-    if app.p1turn: text = "Player 1's Turn"
-    else:text = "Player 2's Turn"
-    canvas.create_text(app.width//2, 150, text=text)
-    canvas.create_text(900, 860, text=f'Score = {app.score[1]}')
-    canvas.create_text(100, 860, text=f'Score = {app.score[0]}')
-    canvas.create_text(900, 880, text=f'Speed = {app.speed[1]}')
-    canvas.create_text(100, 880, text=f'Speed = {app.speed[0]}')
-    canvas.create_text(900, 900, text=f'Intelligence = {app.intel[1]}')
-    canvas.create_text(100, 900, text=f'Intelligence = {app.intel[0]}')
+    canvas.create_text(app.width//2, 40, text="Score", font="Times 36 bold")
+    canvas.create_text(app.width//2, 93, text="Speed", font="Times 36 bold")
+    canvas.create_text(app.width//2, 150, text="Intelligence", font="Times 36 bold")
+    canvas.create_text(app.width//2 + 200, 40, text=str(app.score[1]), font="Times 36 bold")
+    canvas.create_text(app.width//2 + 200, 93, text=str(app.speed[1]), font="Times 36 bold")
+    canvas.create_text(app.width//2 + 200, 150, text=str(app.intel[1]), font="Times 36 bold")
+    canvas.create_text(app.width//2 - 200, 40, text=str(app.score[0]), font="Times 36 bold")
+    canvas.create_text(app.width//2 - 200, 93, text=str(app.speed[0]), font="Times 36 bold")
+    canvas.create_text(app.width//2 - 200, 150, text=str(app.intel[0]), font="Times 36 bold")
+    if app.score[1] >= app.score[0]:
+        drawArrow(app, canvas, app.width//2 + 140, 40, 1)
+    if app.speed[1] >= app.speed[0]:
+        drawArrow(app, canvas, app.width//2 + 140, 93, 1)
+    if app.intel[1] >= app.intel[0]:
+        drawArrow(app, canvas, app.width//2 + 140, 150, 1)
+    if app.score[0] >= app.score[1]:
+        drawArrow(app, canvas, app.width//2 - 140, 40, -1)
+    if app.speed[0] >= app.speed[1]:
+        drawArrow(app, canvas, app.width//2 - 140, 93, -1)
+    if app.intel[0] >= app.intel[1]:
+        drawArrow(app, canvas, app.width//2 - 140, 150, -1)
+    Score0 = copy.copy(app.score[0])
+    Score1 = copy.copy(app.score[1])
+    if app.speed[0] > app.speed[1]:
+        Score0 += 10
+    elif app.speed[1] > app.speed[0]:
+        Score1 += 10
+    if app.intel[0] > app.intel[1]:
+        Score0 += 10
+    elif app.intel[1] > app.intel[0]:
+        Score1 += 10
+    canvas.create_text(100, 100, text=str(Score0), font="Times 100 bold")
+    canvas.create_text(900, 100, text=str(Score1), font="Times 100 bold")
 
 def drawPicks(app,canvas):
+    if len(app.cards[0]) > 0:
+        canvas.create_rectangle(20, 200, 180, 220 + 20*len(app.cards[0]), fill="white")
+    if len(app.cards[1]) > 0:
+        canvas.create_rectangle(820, 200, 980, 220 + 20*len(app.cards[1]), fill="white")
     for i in range(len(app.cards[0])):
-        canvas.create_text(250, 20*(i+1), text=app.cards[0][i].name)
+        canvas.create_text(100, 200 + 20*(i+1), text=app.cards[0][i].name)
     for i in range(len(app.cards[1])):
-        canvas.create_text(750, 20*(i+1), text=app.cards[1][i].name)
+        canvas.create_text(900, 200 + 20*(i+1), text=app.cards[1][i].name)
+    
 
 def drawTitleScreen(app, canvas):
-    canvas.create_text(app.width//2, app.height//4, text='Scrapyard Scramble', font="Times 48 bold")
+    canvas.create_text(app.width//2, 170, text='Scrapyard Scramble', 
+                        font="Times 100")
     modes = ["2 Player", "Easy", "Medium", "Hard"]
     for row in range(4):
         x = 130 * row
         if row == app.highlight:
-            canvas.create_rectangle(app.width//2 - 180, app.height//2 - 180 + x, app.width//2 + 180, app.height//2 - 80 + x, width=5, outline='red')
+            canvas.create_rectangle(app.width//2 - 180, app.height//2 - 180 + x,
+             app.width//2 + 180, app.height//2 - 80 + x, width=5, outline='red', 
+             fill="white")
         else:
-            canvas.create_rectangle(app.width//2 - 180, app.height//2 - 180 + x, app.width//2 + 180, app.height//2 - 80 + x, width=5)
-        canvas.create_text(app.width//2, app.height//2 + x - 130, text=modes[row], font="Times 20 bold")
+            canvas.create_rectangle(app.width//2 - 180, app.height//2 - 180 + x,
+            app.width//2 + 180, app.height//2 - 80 + x, width=5, fill="white")
+        canvas.create_text(app.width//2, app.height//2 + x - 130, 
+            text=modes[row], font="Times 30 bold")
 
 def drawEnd(app, canvas):
     if app.titleScreen:
         drawTitleScreen(app, canvas)
     else:
+        drawPicks(app,canvas)
         drawScores(app,canvas)
         if not app.gameOver:
             drawCards(app, canvas)
         else:
-            if app.winner == 'tie':
-                text = 'It is a tie!'
-            else: 
-                text = f'Player {app.winner} Wins!'
-            canvas.create_text(app.width//2, app.height//2, text=text)
-            canvas.create_text(app.width//2, app.height//2 + 20, 
-                            text=f'Score was {app.score[0]} to {app.score[1]}')
-
-
+            if app.gameMode == 0:
+                if app.winner == 'tie':
+                    text = 'It is a tie!'
+                else: 
+                    text = f'Player {app.winner} Wins!'
+                canvas.create_text(app.width//2, app.height//2, text=text, font="Times 50 bold", fill="white")
+                canvas.create_text(app.width//2, app.height//2 + 50,
+                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
+            else:
+                if app.winner == 1:
+                    canvas.create_text(app.width//2, app.height//2, text="You Win!", font="Times 50 bold", fill="white")
+                    canvas.create_text(app.width//2, app.height//2 + 50,
+                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
+                elif app.winner == 2:
+                    canvas.create_text(app.width//2, app.height//2, text="You Lose. :(", font="Times 50 bold", fill="white")
+                    canvas.create_text(app.width//2, app.height//2 + 50,
+                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
+                else:
+                    canvas.create_text(app.width//2, app.height//2, text="It is a tie!", font="Times 50 bold", fill="white")
+                    canvas.create_text(app.width//2, app.height//2 + 50,
+                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
 def redrawAll(app,canvas):
-    drawPicks(app,canvas)
+    canvas.create_image(500, 500, image=ImageTk.PhotoImage(app.image1)) 
     drawEnd(app, canvas)
 
 
