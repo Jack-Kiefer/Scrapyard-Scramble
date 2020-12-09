@@ -106,31 +106,34 @@ class Copy(Card):
         self.pointM = 0
         self.image = image
     def giveScore(self, app, p, i):
-        if not app.givingHint:
-            if p == 1: 
-                op = 0
-                lastIndex = i
-            else: 
-                op = 1
-                lastIndex = i - 1
-        else:
-            if p == 1: 
-                op = 0
-                lastIndex = i - 1
-            else: 
-                op = 1
-                lastIndex = i
-        if lastIndex == -1:
-            return (self.speedM, self.intM, self.pointM)
-        speedM = app.cards[op][lastIndex].speedM
-        intM = app.cards[op][lastIndex].intM
-        pointM = app.cards[op][lastIndex].pointM
-        self.speedM = speedM
-        self.pointM = pointM
-        self.intM = intM
+        try:
+            if not app.givingHint:
+                if p == 1: 
+                    op = 0
+                    lastIndex = i
+                else: 
+                    op = 1
+                    lastIndex = i - 1
+            else:
+                if p == 1: 
+                    op = 0
+                    lastIndex = i - 1
+                else: 
+                    op = 1
+                    lastIndex = i
+            if lastIndex == -1:
+                return (self.speedM, self.intM, self.pointM)
+            speedM = app.cards[op][lastIndex].speedM
+            intM = app.cards[op][lastIndex].intM
+            pointM = app.cards[op][lastIndex].pointM
+            self.speedM = speedM
+            self.pointM = pointM
+            self.intM = intM
+        except:
+            self.speedM = 0
+            self.pointM = 0
+            self.intM = 0
         return (self.speedM, self.intM, self.pointM)
-
-
 
 def appStarted(app):
     app.seenRules = False
@@ -267,8 +270,13 @@ def appStartedHelper(app):
     app.card2 = None
     app.time2 = 0
     app.finalScore = [0, 0]
+    app.scoreModifiers = [0, 0]
+    app.speedModifiers = [0, 0]
+    app.intelModifiers = [0, 0]
+    app.finalScoreModifiers = [0, 0]
     #0 is 2 player, 1 is random, 2 is minimax with max depth 2, 3 is minimax with full depth
     newPile(app)
+    calculateModifiers(app)
 
 def pickCard(app, i):
     #Adds cards to player's cards
@@ -298,6 +306,7 @@ def pickCard(app, i):
             if isinstance(app.pile[c], Card):
                 app.hrow = c // 3
                 app.hcol = c % 3
+                calculateModifiers(app)
 
 def timerFired(app):
     if app.waiting:
@@ -311,6 +320,7 @@ def timerFired(app):
                 if isinstance(app.pile[c], Card):
                     app.hrow = c // 3
                     app.hcol = c % 3
+                    calculateModifiers(app)
     if app.timer and not app.titleScreen and not app.rulesScreen:
         if app.p1time <= 0:
             app.gameOver = True
@@ -478,6 +488,7 @@ def keyPressed(app, event):
                     app.titleScreen = False
                     if app.seenRules:
                         app.rulesScreen = False
+                        app.time1 = time.time()
                     else:
                         app.rulesScreen = True
                         app.seenRules = True
@@ -486,7 +497,7 @@ def keyPressed(app, event):
                     if app.gameMode == 2:
                         app.maxDepth = 2
         else:
-            if event.key == 'r' or (app.gameOver and event.key != 'Space'):
+            if event.key == 'r' or app.gameOver:
                 appStartedHelper(app)
             elif not app.gameOver:
                 i = app.hcol + 3*app.hrow
@@ -498,6 +509,7 @@ def keyPressed(app, event):
                     app.pile[4] == None and isinstance(app.pile[5], Card)):
                         app.hrow = 0
                         app.hcol = 1
+                    calculateModifiers(app)
                 elif event.key == "Down":
                     if app.hrow != 1 and isinstance(app.pile[i + 3], Card):
                         app.hrow += 1
@@ -506,6 +518,7 @@ def keyPressed(app, event):
                     app.pile[5] == None and isinstance(app.pile[4], Card)):
                         app.hrow = 1
                         app.hcol = 1
+                    calculateModifiers(app)
                 elif event.key == "Left":
                     if app.hcol != 0:
                         if isinstance(app.pile[i - 1], Card):
@@ -531,8 +544,7 @@ def keyPressed(app, event):
                                         app.hcol == 2):
                                         app.hrow -= 1
                                         app.hcol -= 2
-
-
+                    calculateModifiers(app)
                 elif event.key == "Right":
                     if app.hcol != 2:
                         if isinstance(app.pile[i + 1], Card):
@@ -557,6 +569,7 @@ def keyPressed(app, event):
                                         app.hcol == 0):
                                         app.hrow -= 1
                                         app.hcol += 2
+                    calculateModifiers(app)
                 elif event.key == 'Space':
                     pickCard(app, i)
                 elif event.key == 'h':
@@ -569,6 +582,28 @@ def keyPressed(app, event):
                 elif event.key == '3':
                     app.gameMode = 2
                     app.maxDepth = 2
+
+def calculateModifiers(app):
+    score = copy.copy(app.score)
+    speed = copy.copy(app.speed)
+    intel = copy.copy(app.intel)
+    finalScore = copy.copy(app.finalScore)
+    i = app.hcol + 3*app.hrow
+    if app.pile[i] != None:
+        if app.p1turn: 
+            p = 0
+        else:
+            p = 1
+        app.cards[p] = app.cards[p] + [app.pile[i]]
+        calculateScore(app, 0)
+        calculateScore(app, 1)
+        app.scoreModifiers = [app.score[0] - score[0], app.score[1] - score[1]]
+        app.speedModifiers = [app.speed[0] - speed[0], app.speed[1] - speed[1]]
+        app.intelModifiers = [app.intel[0] - intel[0], app.intel[1] - intel[1]]
+        app.finalScoreModifiers = [app.finalScore[0] - finalScore[0], app.finalScore[1] - finalScore[1]]
+        app.cards[p].pop()
+        calculateScore(app, 0)
+        calculateScore(app, 1)
 
 def newPile(app):
     app.pile = []
@@ -588,6 +623,43 @@ def getCellBounds(app, row, col):
     y0 = app.margin + row * cellHeight 
     y1 = app.margin + (row+1) * cellHeight - app.cellmargin
     return (x0, y0, x1, y1)
+
+def drawCardModifiers(app, canvas):
+        if app.scoreModifiers[0] > 0:
+            canvas.create_text(250, 40, text=f'+{app.scoreModifiers[0]}', fill="red", font="Times 20")
+        elif app.scoreModifiers[0] < 0:
+            canvas.create_text(250, 40, text=f'{app.scoreModifiers[0]}', fill="red", font="Times 20")
+        if app.speedModifiers[0] > 0:
+            canvas.create_text(250, 93, text=f'+{app.speedModifiers[0]}', fill="red", font="Times 20")
+        elif app.speedModifiers[0] < 0:
+            canvas.create_text(250, 93, text=f'{app.speedModifiers[0]}', fill="red", font="Times 20")
+        if app.intelModifiers[0] > 0:
+            canvas.create_text(250, 150, text=f'+{app.intelModifiers[0]}', fill="red", font="Times 20")
+        elif app.intelModifiers[0] < 0:
+            canvas.create_text(250, 150, text=f'{app.intelModifiers[0]}', fill="red", font="Times 20")
+        if app.scoreModifiers[1] > 0:
+            canvas.create_text(750, 40, text=f'+{app.scoreModifiers[1]}', fill="red", font="Times 20")
+        elif app.scoreModifiers[1] < 0:
+            canvas.create_text(750, 40, text=f'{app.scoreModifiers[1]}', fill="red", font="Times 20")
+        if app.speedModifiers[1] > 0:
+            canvas.create_text(750, 93, text=f'+{app.speedModifiers[1]}', fill="red", font="Times 20")
+        elif app.speedModifiers[1] < 0:
+            canvas.create_text(750, 93, text=f'{app.speedModifiers[1]}', fill="red", font="Times 20")
+        if app.intelModifiers[1] > 0:
+            canvas.create_text(750, 150, text=f'+{app.intelModifiers[1]}', fill="red", font="Times 20")
+        elif app.intelModifiers[1] < 0:
+            canvas.create_text(750, 150, text=f'{app.intelModifiers[1]}', fill="red", font="Times 20")
+        
+        if app.finalScoreModifiers[0] >= 0:
+            canvas.create_text(190, 100, text=f'+{app.finalScoreModifiers[0]}', fill="red", font="Times 30")
+        elif app.finalScoreModifiers[0] < 0:
+            canvas.create_text(190, 100, text=f'{app.finalScoreModifiers[0]}', fill="red", font="Times 30")
+
+        if app.finalScoreModifiers[1] >= 0:
+            canvas.create_text(810, 100, text=f'+{app.finalScoreModifiers[1]}', fill="red", font="Times 30")
+        elif app.finalScoreModifiers[1] < 0:
+            canvas.create_text(810, 100, text=f'{app.finalScoreModifiers[1]}', fill="red", font="Times 30")
+
 
 def drawCards(app, canvas):
     for row in range(app.rows):
@@ -632,6 +704,7 @@ def drawArrow(app, canvas, x, y, d):
 
 
 def drawScores(app, canvas):
+    drawCardModifiers(app, canvas)
     canvas.create_text(app.width//2, 40, text="Score", font="Times 36 bold")
     canvas.create_text(app.width//2, 93, text="Speed", font="Times 36 bold")
     canvas.create_text(app.width//2, 150, text="Intelligence", font="Times 36 bold")
@@ -656,7 +729,6 @@ def drawScores(app, canvas):
     canvas.create_text(100, 100, text=str(app.finalScore[0]), font="Times 100 bold")
     canvas.create_text(900, 100, text=str(app.finalScore[1]), font="Times 100 bold")
 
-
 def drawPicks(app,canvas):
     if len(app.cards[0]) > 0:
         canvas.create_rectangle(20, 200, 180, 220 + 20*len(app.cards[0]), fill="white")
@@ -674,7 +746,11 @@ def drawHint(app, canvas):
         if app.hint != None:
             card = app.pile[app.hint]
             canvas.create_text(100, 620, text=f"Pick {card.name}!", font="Arial 20", width="100", justify="center", fill="black")
-
+    else:
+        if app.p1turn: p=1
+        else: p=2
+        canvas.create_rectangle(30, 540, 170, 620, fill="white")
+        canvas.create_text(100, 580, text=f"Player {p}'s turn", font="Arial 20", width="100", justify="center", fill="black")
     
 def drawTimer(app, canvas):
     if app.timer:
@@ -743,7 +819,7 @@ def drawRulesScreen(app, canvas):
         drawCard(app, canvas, x, y, x + 180, y + 280, "black", app.card2)
     canvas.create_text(380, 150, text ="Rules", font="Times 60 bold")
     canvas.create_line(150, 200, 600, 200, width=3)
-    canvas.create_text(125, 300, text ='- Players alternate picking cards from 6-card "Scrap Piles" with the last card from each pile discarded.', font="Times 38", anchor="w", width=500)
+    canvas.create_text(125, 300, text ='- Players alternate picking cards from 6-card "Scrap Piles" and the last card from each pile is discarded.', font="Times 38", anchor="w", width=500)
     canvas.create_text(125, 465, text ='- The object of the game is to have the most points after 6 "Scrap Piles."', font="Times 38", anchor="w", width=500)
     canvas.create_text(125, 650, text ="- At the end of the game the player with the most Speed gets 10 points. The same goes for the player with the most Intelligence.", font="Times 38", anchor="w", width=500)
     canvas.create_text(140, 800, text ='[Press any key to continue]', font="Times 38", anchor="w", width=500)
