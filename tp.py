@@ -148,55 +148,55 @@ def appStartedHelper(app):
     app.margin = 200
     app.cellmargin = 20
     #Citation: https://image.freepik.com/free-vector/cartoon-robot-guards-human-exoskeleton-armor_1441-2671.jpg
-    app.armorImage = app.loadImage("Armor.png")
+    app.armorImage = app.loadImage("images/Armor.png")
     #Citation: https://pngio.com/images/png-a1920880.html
-    app.attackBoostImage = app.loadImage("AttackBoost.png")
+    app.attackBoostImage = app.loadImage("images/AttackBoost.png")
     #Citation: https://www.deviantart.com/venjix5/art/Spinner-N-Bot-Buzzsaw-754401368
-    app.buzzsawImage = app.loadImage("Buzzsaw.png")
+    app.buzzsawImage = app.loadImage("images/Buzzsaw.png")
     #Citation: https://cdn0.iconfinder.com/data/icons/communication-and-multimedia/48/communication_and_multimedia_flat_icons-10-512.png
-    app.buzzsawShieldImage = app.loadImage("BuzzsawShield.png")
+    app.buzzsawShieldImage = app.loadImage("images/BuzzsawShield.png")
     #Citation: https://thumbs.dreamstime.com/z/robot-pointing-finger-cartoon-191439876.jpg
-    app.counterPartImage = app.loadImage("CounterPart.png")
+    app.counterPartImage = app.loadImage("images/CounterPart.png")
     #Citation: https://pngio.com/images/png-a1920880.html
-    app.defenseBoostImage = app.loadImage("DefenseBoost.png")
+    app.defenseBoostImage = app.loadImage("images/DefenseBoost.png")
     #Citation: https://image.shutterstock.com/image-vector/cartoon-boom-comic-book-explosion-260nw-84002389.jpg and https://image.shutterstock.com/image-vector/pizzaflat-coloring-styleillustration-children-260nw-761800429.jpg
-    app.explosivePizzaImage = app.loadImage("ExplosivePizza.png")
+    app.explosivePizzaImage = app.loadImage("images/ExplosivePizza.png")
     #Citation: https://cdn0.iconfinder.com/data/icons/communication-and-multimedia/48/communication_and_multimedia_flat_icons-10-512.png
-    app.explosivePizzaShieldImage = app.loadImage("ExplosivePizzaShield.png")
+    app.explosivePizzaShieldImage = app.loadImage("images/ExplosivePizzaShield.png")
     #Citation: https://cdn1.vectorstock.com/i/1000x1000/24/55/comic-cartoon-robot-arm-vector-6802455.jpg
-    app.extraArmImage = app.loadImage("ExtraArm.png")
+    app.extraArmImage = app.loadImage("images/ExtraArm.png")
     #Citation: https://image.shutterstock.com/image-vector/cartoon-rocket-pack-260nw-124043488.jpg and https://www.cleanpng.com/png-robotics-clip-art-robot-cliparts-black-191716/preview.html
-    app.jetpackImage = app.loadImage("Jetpack.png")
+    app.jetpackImage = app.loadImage("images/Jetpack.png")
     #Citation: https://cdn0.iconfinder.com/data/icons/communication-and-multimedia/48/communication_and_multimedia_flat_icons-10-512.png
-    app.laserBlasterShieldImage = app.loadImage("LaserBlasterShield.png")
+    app.laserBlasterShieldImage = app.loadImage("images/LaserBlasterShield.png")
     #Citation: https://pixers.us/posters/retro-laser-gun-or-raygun-vector-illustration-15810779
-    app.laserBlasterImage = app.loadImage("LaserBlaster.png")
+    app.laserBlasterImage = app.loadImage("images/LaserBlaster.png")
     #Citation: https://www.jamiesale-cartoonist.com/wp-content/uploads/dog-12.png and 
-    app.laserDogImage = app.loadImage("LaserDog.png")
+    app.laserDogImage = app.loadImage("images/LaserDog.png")
     #Citation: https://cdn0.iconfinder.com/data/icons/communication-and-multimedia/48/communication_and_multimedia_flat_icons-10-512.png
-    app.laserDogShieldImage = app.loadImage("LaserDogShield.png")
+    app.laserDogShieldImage = app.loadImage("images/LaserDogShield.png")
     #Citation: https://p.kindpng.com/picc/s/55-557274_free-to-use-public-domain-guns-clip-art.png
-    app.machineGunImage = app.loadImage("MachineGun.png")
+    app.machineGunImage = app.loadImage("images/MachineGun.png")
     #Citation: https://cdn0.iconfinder.com/data/icons/communication-and-multimedia/48/communication_and_multimedia_flat_icons-10-512.png
-    app.machineGunShieldImage = app.loadImage("MachineGunShield.png")
+    app.machineGunShieldImage = app.loadImage("images/MachineGunShield.png")
     #Citation: https://media.geeksforgeeks.org/wp-content/uploads/minmax.png
-    app.minimaxAlgorithmImage = app.loadImage("MinimaxAlgorithm.png")
+    app.minimaxAlgorithmImage = app.loadImage("images/MinimaxAlgorithm.png")
     #Citation: https://lh3.googleusercontent.com/proxy/63VqxYMIIlPbTNmMbHC8DA4oN5xKiEy-oXnKcJ7Q9QIUTTz5Sh7iLjMw2gNg8co7-Pr1mt1qNlYhOFmTqyk3sB1gmqq3xiEqdADihByDCtx73EslzMsPYuXb-jIwHykJSHo-eC9Gd3EFdiM2XKXIzU4kM6ucCgd6
-    app.neuralNetworkImage = app.loadImage("NeuralNetwork.png")
+    app.neuralNetworkImage = app.loadImage("images/NeuralNetwork.png")
     #Citation: https://smallimg.pngkey.com/png/small/522-5224285_-soloveika-computer-clipart.png and https://lh3.googleusercontent.com/proxy/YtomkqZNE4YrWwWZbng8pN0Sv6NxrILYtjMpbO5YdQpjm2qOg4MNJeSphHbgox_rbcxbJrbVhBFPbQCkCkSz6h2w_fbSjHykb7ZERqKIkqoVvuiwpSSrJ-eC78NbYezVdAYURSHRXBl71X0
-    app.overclockImage = app.loadImage("Overclock.png")
+    app.overclockImage = app.loadImage("images/Overclock.png")
     #Citation: https://www.istockphoto.com/illustrations/power-plug
-    app.powerBoostImage = app.loadImage("PowerBoost.png")
+    app.powerBoostImage = app.loadImage("images/PowerBoost.png")
     #Citation: http://clipart-library.com/computer-programmer-cliparts.html
-    app.quickProgrammingImage = app.loadImage("QuickProgramming.png")
+    app.quickProgrammingImage = app.loadImage("images/QuickProgramming.png")
     #Citation: https://rocket-boots.github.io/rocket-boots/images/boots1_flat_300.png
-    app.rocketBootsImage = app.loadImage("RocketBoots.png")
+    app.rocketBootsImage = app.loadImage("images/RocketBoots.png")
     #Citation: https://www.iconfinder.com/icons/4093446/battle_launcher_military_rocket_war_weapon_icon
-    app.rocketLauncherImage = app.loadImage("RocketLauncher.png")
+    app.rocketLauncherImage = app.loadImage("images/RocketLauncher.png")
     #Citation: https://www.iconfinder.com/icons/4093446/battle_launcher_military_rocket_war_weapon_icon
-    app.rocketLauncherShieldImage = app.loadImage("rocketLauncherShield.png")
+    app.rocketLauncherShieldImage = app.loadImage("images/rocketLauncherShield.png")
     #Citation: https://www.clipartkey.com/mpngs/m/13-133416_clip-art-hiking-boots-clipart-hiking-boot-clip.png and https://www.iconspng.com/image/97727/shiny-slime
-    app.stickyBootsImage = app.loadImage("StickyBoots.png")
+    app.stickyBootsImage = app.loadImage("images/StickyBoots.png")
     laserBlaster = Weapon('Laser Blaster', '+5 points if opponent does not have a Laser Blaster Shield, otherwise +2 points', 'Laser Blaster Shield', app.laserBlasterImage)
     buzzsaw = Weapon('Buzzsaw', '+5 points if opponent does not have a Buzzsaw Shield, otherwise +2 points', 'Buzzsaw Shield', app.buzzsawImage)
     rocketLauncher = Weapon('Rocket Launcher', '+5 points if opponent does not have a Rocket Launcher Shield, otherwise +2 points', 'Rocket Launcher Shield', app.rocketLauncherImage)
