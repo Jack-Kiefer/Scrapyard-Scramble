@@ -131,6 +131,10 @@ class Copy(Card):
 
 
 def appStarted(app):
+    app.seenRules = False
+    appStartedHelper(app)
+
+def appStartedHelper(app):
     app.titleScreen = True
     app.highlight = 0
     app.pile = []
@@ -256,6 +260,10 @@ def appStarted(app):
     app.time1 = time.time()
     app.givingHint = False
     app.hint = None
+    app.rulesScreen = False
+    app.card1 = None
+    app.card2 = None
+    app.time2 = 0
     #0 is 2 player, 1 is random, 2 is minimax with max depth 2, 3 is minimax with full depth
     newPile(app)
 
@@ -300,7 +308,7 @@ def timerFired(app):
                 if isinstance(app.pile[c], Card):
                     app.hrow = c // 3
                     app.hcol = c % 3
-    if app.timer and not app.titleScreen:
+    if app.timer and not app.titleScreen and not app.rulesScreen:
         if app.p1time <= 0:
             app.gameOver = True
             app.winner = 2
@@ -313,6 +321,19 @@ def timerFired(app):
         else:
             app.p2time -= (time.time() - app.time1)
             app.time1 = time.time()
+    if app.rulesScreen:
+        if time.time() - app.time2 > 2:
+            app.time2 = time.time()
+            rand1 = random.randint(0, 33)
+            card1 = app.deck[rand1]
+            while True:
+                rand2 = random.randint(0, 33)
+                card2 = app.deck[rand2]
+                if card1.name != card2.name:
+                    break
+            app.card1 = card1
+            app.card2 = card2
+
 
 
 
@@ -324,7 +345,6 @@ def generateMove(app):
     if app.gameMode == 2 or app.gameMode == 3:
         return minimax(app)
 
-# CITATION: Minimax algorithm inspired by one from the Game AI mini-lecture on 11/5/20
 def minimax(app):
     pile = copy.deepcopy(app.pile)
     cards = copy.deepcopy(app.cards)
@@ -334,7 +354,8 @@ def minimax(app):
     calculateScore(app, 0)
     calculateScore(app, 1)
     return move
-            
+
+# CITATION: Minimax algorithm inspired by one from the Game AI mini-lecture on 11/5/20   
 def minimaxHelper(app, turn, depth):
     if app.pile.count(None) == 5 or depth == app.maxDepth:
         calculateScore(app, 0)
@@ -430,7 +451,10 @@ def endGame(app):
 
 def keyPressed(app, event):
     if not app.waiting:
-        if app.titleScreen:
+        if app.rulesScreen:
+            app.rulesScreen = False
+            app.time1 = time.time()
+        elif app.titleScreen:
             if event.key == "Up":
                 if app.highlight != 0:
                     app.highlight -= 1
@@ -446,13 +470,18 @@ def keyPressed(app, event):
                     app.timer = True
                 else:
                     app.titleScreen = False
+                    if app.seenRules:
+                        app.rulesScreen = False
+                    else:
+                        app.rulesScreen = True
+                        app.seenRules = True
+                        app.time2 = time.time() - 2
                     app.gameMode = app.highlight
-                    app.time1 = time.time()
                     if app.gameMode == 2:
                         app.maxDepth = 2
         else:
             if event.key == 'r' or (app.gameOver and event.key != 'Space'):
-                appStarted(app)
+                appStartedHelper(app)
             elif not app.gameOver:
                 i = app.hcol + 3*app.hrow
                 if event.key == "Up": 
@@ -628,8 +657,12 @@ def drawScores(app, canvas):
         Score0 += 10
     elif app.intel[1] > app.intel[0]:
         Score1 += 10
-    canvas.create_text(100, 100, text=str(Score0), font="Times 100 bold")
-    canvas.create_text(900, 100, text=str(Score1), font="Times 100 bold")
+    if not app.gameOver:
+        canvas.create_text(100, 100, text=str(Score0), font="Times 100 bold")
+        canvas.create_text(900, 100, text=str(Score1), font="Times 100 bold")
+    else:
+        canvas.create_text(100, 100, text=str(app.score[0]), font="Times 100 bold")
+        canvas.create_text(900, 100, text=str(app.score[1]), font="Times 100 bold")
 
 def drawPicks(app,canvas):
     if len(app.cards[0]) > 0:
@@ -643,10 +676,11 @@ def drawPicks(app,canvas):
 
 def drawHint(app, canvas):
     if app.gameMode > 0:
-        canvas.create_text(100, 550, text="Press h for a hint!", font="Arial 20", width="100", justify="center", fill="orange")
+        canvas.create_rectangle(30, 520, 170, 680, fill="white")
+        canvas.create_text(100, 550, text="Press h for a hint!", font="Arial 20", width="100", justify="center", fill="black")
         if app.hint != None:
             card = app.pile[app.hint]
-            canvas.create_text(100, 600, text=card.name, font="Arial 20", width="100", justify="center", fill="orange")
+            canvas.create_text(100, 620, text=f"Pick {card.name}!", font="Arial 20", width="100", justify="center", fill="black")
 
     
 def drawTimer(app, canvas):
@@ -671,10 +705,12 @@ def drawTimer(app, canvas):
             canvas.create_text(900, 750, text=p2time, font="Times 38 bold", fill="black")
 
 def drawTitleScreen(app, canvas):
-    canvas.create_text(app.width//2, 150, text='Scrapyard Scramble', 
+    canvas.create_text(app.width//2, 100, text='Scrapyard Scramble', 
                         font="Times 100")
-    canvas.create_text(app.width//2, 250, text='By Jack Kiefer', 
-                        font="Times 50")       
+    canvas.create_text(app.width//2, 190, text='By Jack Kiefer', 
+                        font="Times 30")      
+    canvas.create_text(app.width//2, 270, text='Choose a Game Mode:', 
+                        font="Times 50")     
     if app.timer:
         modes = ["2 Player", "Easy", "Medium", "Hard", "Timer: On"]
     else:
@@ -697,9 +733,32 @@ def drawTitleScreen(app, canvas):
     canvas.create_rectangle(app.width//2 - 100, app.height//2 + 360,
              app.width//2 + 100, app.height//2 + 420, width=5, outline=outline, fill="white")
     canvas.create_text(app.width//2 , app.height//2 + 390, text = modes[4], font="Times 22 bold")
+    canvas.create_rectangle(700, 600, 950, 770, fill="white")
+    canvas.create_text(825, 630, text="Controls:", font="Times 26 bold")
+    canvas.create_text(825, 700, text="Use arrow keys to move highlighted box and press space to select a card.", 
+                                font="Times 23", width=225, justify="center")
+
+def drawRulesScreen(app, canvas):
+    canvas.create_rectangle(100, 100, 900, 900, fill="white")
+    x = 650
+    y = 150
+    if app.card1 != None:
+        drawCard(app, canvas, x, y, x + 180, y + 280, "black", app.card1)
+    x = 650
+    y = 500
+    if app.card2 != None:
+        drawCard(app, canvas, x, y, x + 180, y + 280, "black", app.card2)
+    canvas.create_text(380, 150, text ="Rules", font="Times 60 bold")
+    canvas.create_line(150, 200, 600, 200, width=3)
+    canvas.create_text(125, 300, text ='- Players alternate picking cards from 6-card "Scrap Piles" with the last card from each pile discarded.', font="Times 38", anchor="w", width=500)
+    canvas.create_text(125, 465, text ='- The object of the game is to have the most points after 6 "Scrap Piles."', font="Times 38", anchor="w", width=500)
+    canvas.create_text(125, 650, text ="- At the end of the game the player with the most Speed gets 10 points. The same goes for the player with the most Intelligence.", font="Times 38", anchor="w", width=500)
+    canvas.create_text(140, 800, text ='[Press any key to continue]', font="Times 38", anchor="w", width=500)
 
 def drawEnd(app, canvas):
-    if app.titleScreen:
+    if app.rulesScreen:
+        drawRulesScreen(app, canvas)
+    elif app.titleScreen:
         drawTitleScreen(app, canvas)
     else:
         drawScores(app,canvas)
@@ -709,28 +768,28 @@ def drawEnd(app, canvas):
             drawTimer(app,canvas)
             drawHint(app, canvas)
         else:
+            canvas.create_rectangle(150, 300, 850, 900, fill = "white")
             if app.gameMode == 0:
-                canvas.create_rectangle(400, 600, 400, 600, fill = "red")
                 if app.winner == 'tie':
                     text = 'It is a tie!'
                 else: 
                     text = f'Player {app.winner} Wins!'
-                canvas.create_text(app.width//2, app.height//2, text=text, font="Times 50 bold", fill="white")
+                canvas.create_text(app.width//2, app.height//2, text=text, font="Times 50 bold", fill="black")
                 canvas.create_text(app.width//2, app.height//2 + 250, width="600", justify="center",
-                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
+                             text="[Press any key to return to the main menu]", font="Times 50 bold", fill="black")
             else:
                 if app.winner == 1:
-                    canvas.create_text(app.width//2, app.height//2, text="You Win!", font="Times 50 bold", fill="white")
+                    canvas.create_text(app.width//2, app.height//2, text="You Win!", font="Times 50 bold", fill="black")
                     canvas.create_text(app.width//2, app.height//2 + 250, width="600", justify="center",
-                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
+                             text="[Press any key to return to the main menu]", font="Times 50 bold", fill="black")
                 elif app.winner == 2:
-                    canvas.create_text(app.width//2, app.height//2, text="You Lose. :(", font="Times 50 bold", fill="white")
+                    canvas.create_text(app.width//2, app.height//2, text="You Lose. :(", font="Times 50 bold", fill="black")
                     canvas.create_text(app.width//2, app.height//2 + 150, width="600",justify="center",
-                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
+                             text="[Press any key to return to the main menu]", font="Times 50 bold", fill="black")
                 else:
-                    canvas.create_text(app.width//2, app.height//2, text="It is a tie!", font="Times 50 bold", fill="white")
+                    canvas.create_text(app.width//2, app.height//2, text="It is a tie!", font="Times 50 bold", fill="black")
                     canvas.create_text(app.width//2, app.height//2 + 150, width="600",justify="center",
-                             text="Press any key to return to the main menu", font="Times 50 bold", fill="white")
+                             text="[Press any key to return to the main menu]", font="Times 50 bold", fill="black")
 def redrawAll(app,canvas):
     canvas.create_image(500, 500, image=ImageTk.PhotoImage(app.image1)) 
     drawEnd(app, canvas)
