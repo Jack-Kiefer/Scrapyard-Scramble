@@ -4,6 +4,8 @@ from cmu_112_graphics import *
 import copy
 import time
 
+#This is the main file for Scrapyard Scramble. Run this file.
+
 class Card(object):
     def __init__(self, name, effectS, speedM, intM, pointM, image):
         self.name = name
@@ -264,6 +266,7 @@ def appStartedHelper(app):
     app.card1 = None
     app.card2 = None
     app.time2 = 0
+    app.finalScore = [0, 0]
     #0 is 2 player, 1 is random, 2 is minimax with max depth 2, 3 is minimax with full depth
     newPile(app)
 
@@ -333,9 +336,6 @@ def timerFired(app):
                     break
             app.card1 = card1
             app.card2 = card2
-
-
-
 
 def generateMove(app):
     if app.gameMode == 1:
@@ -427,23 +427,29 @@ def calculateScore(app, p):
         app.speed[p] += speed
         app.intel[p] += intel
         app.score[p] += score
+    calculateFinalScore(app)
 
+def calculateFinalScore(app):
+    Score0 = copy.copy(app.score[0])
+    Score1 = copy.copy(app.score[1])
+    if app.speed[0] > app.speed[1]:
+        Score0 += 10
+    elif app.speed[1] > app.speed[0]:
+        Score1 += 10
+    if app.intel[0] > app.intel[1]:
+        Score0 += 10
+    elif app.intel[1] > app.intel[0]:
+        Score1 += 10
+    app.finalScore = (Score0, Score1)
 
 def endGame(app):
     app.gameOver = True
-    if app.speed[0] > app.speed[1]:
-        app.score[0] += 10
-    elif app.speed[1] > app.speed[0]:
-        app.score[1] += 10
-
-    if app.intel[0] > app.intel[1]:
-        app.score[0] += 10
-    elif app.intel[1] > app.intel[0]:
-        app.score[1] += 10
-
-    if app.score[0] > app.score[1]:
+    calculateFinalScore(app)
+    calculateScore(app, 0)
+    calculateScore(app, 1)
+    if app.finalScore[0] > app.finalScore[1]:
         app.winner = 1
-    elif app.score[1] > app.score[0]:
+    elif app.finalScore[1] > app.finalScore[0]:
         app.winner = 2
     else:
         app.winner = 'tie'
@@ -647,22 +653,9 @@ def drawScores(app, canvas):
         drawArrow(app, canvas, app.width//2 - 140, 93, -1)
     if app.intel[0] > app.intel[1]:
         drawArrow(app, canvas, app.width//2 - 140, 150, -1)
-    Score0 = copy.copy(app.score[0])
-    Score1 = copy.copy(app.score[1])
-    if app.speed[0] > app.speed[1]:
-        Score0 += 10
-    elif app.speed[1] > app.speed[0]:
-        Score1 += 10
-    if app.intel[0] > app.intel[1]:
-        Score0 += 10
-    elif app.intel[1] > app.intel[0]:
-        Score1 += 10
-    if not app.gameOver:
-        canvas.create_text(100, 100, text=str(Score0), font="Times 100 bold")
-        canvas.create_text(900, 100, text=str(Score1), font="Times 100 bold")
-    else:
-        canvas.create_text(100, 100, text=str(app.score[0]), font="Times 100 bold")
-        canvas.create_text(900, 100, text=str(app.score[1]), font="Times 100 bold")
+    canvas.create_text(100, 100, text=str(app.finalScore[0]), font="Times 100 bold")
+    canvas.create_text(900, 100, text=str(app.finalScore[1]), font="Times 100 bold")
+
 
 def drawPicks(app,canvas):
     if len(app.cards[0]) > 0:
@@ -795,14 +788,12 @@ def redrawAll(app,canvas):
     drawEnd(app, canvas)
 
 
+#Citation: https://www.cs.cmu.edu/~112/notes/notes-animations-part1.html 
 def playGame():
     width = 1000
     height = 1000
     runApp(width=width, height=height)
 
-#################################################
-# main
-#################################################
 
 def main():
     playGame()
